@@ -1,0 +1,37 @@
+# Конфигурация моделей прогноза geomag-forecast.
+
+# Эмпирическая модель BMR/OBM для прогноза Dst.
+# Параметры передаются в конструктор EmpiricalBMR(a, Ec, b, c).
+model:
+  name: "EmpiricalBMR"          # Модель O'Brien & McPherron (2000)
+  a: -4.4                       # Коэффициент Q, нТл/(мВ/м·ч)
+  Ec: 0.49                      # Порог Ey, мВ/м
+  b: 7.26                       # Коэффициент коррекции Dst*, нТл/нПа**0.5
+  c: 11.0                       # Константа коррекции Dst*, нТл
+
+integration:
+  method: "RK45"                # Метод scipy.integrate.solve_ivp
+  rtol: 1.0e-7
+  atol: 1.0e-9
+
+# Физическая модель Drag-Based Model (DBM) для прихода CME на L1.
+dbm:
+  gamma: 0.5e-7                 # Параметр торможения, 1/км
+  v_sw: 400.0                   # Скорость фонового солнечного ветра, км/с
+  r_start_au: 0.1               # Начальное расстояние, а.е.
+  r_l1_au: 1.0                  # Целевое расстояние (L1), а.е.
+
+# Индексы колонок (0-based) в часовом OMNI2-файле (omni2_YYYY.dat).
+omni:
+  columns:
+    year: 0
+    doy: 1
+    hour: 2
+    Bz: 16                      # Bz GSM, нТл (слово 17)
+    V: 24                       # Скорость солнечного ветра, км/с (слово 25)
+    P_dyn: 28                   # Динамическое давление, нПа (слово 29)
+    Dst: 40                     # Dst-индекс, нТл (слово 41)
+
+paths:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"

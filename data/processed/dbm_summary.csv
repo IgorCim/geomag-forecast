@@ -1,0 +1,2 @@
+n_total,n_earth_directed,n_side,n_halo,n_vsw_omni,n_onsets_total,n_matched,vsw_mean,dt_mean,dt_std,dt_median,pct_6,pct_12,pct_18,hit_rate_all,hit_rate_matched,onset_lag_mean
+18901,250,18651,250,250,980,110,415.3909090909091,3.122221590394089,13.910444803245728,5.049291031138333,20.0,47.27272727272727,74.54545454545455,32.0,72.72727272727273,3.122221590394089

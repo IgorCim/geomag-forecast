@@ -1,0 +1,25 @@
+{
+  "n_params": 54081,
+  "device": "cpu",
+  "elapsed_seconds": 180.1747395992279,
+  "epochs_run": 2,
+  "max_epochs": 2,
+  "best_epoch": 2,
+  "best_val_loss": 42.8323480538712,
+  "stopped_early": false,
+  "seed": 42,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 163.11554247850444,
+      "val_loss": 44.25715413441531,
+      "lr": 0.001
+    },
+    {
+      "epoch": 2,
+      "train_loss": 138.01775976275425,
+      "val_loss": 42.8323480538712,
+      "lr": 0.001
+    }
+  ]
+}
