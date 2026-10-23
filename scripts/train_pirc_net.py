@@ -1,7 +1,14 @@
-"""Обучение PiRCNet — LSTM-корректора ошибки BMR (Этап 3.2).
+"""Обучение PiRCNet — LSTM-корректора ошибки BMR (Этап 3.2 / 3.3).
 
 Запуск:
     python scripts/train_pirc_net.py
+    python scripts/train_pirc_net.py --lr 3e-4 --dropout 0.3 --patience 20 \
+        --weight_decay 1e-4 --storm_weight 3.0
+
+Этап 3.3: гиперпараметры вынесены в CLI-аргументы. Дефолты смягчены
+(lr 1e-3 -> 3e-4, dropout 0.2 -> 0.3, patience 15 -> 20,
+weight_decay 1e-5 -> 1e-4, storm_weight 5.0 -> 3.0), чтобы модель меньше
+перестраховывалась на средних бурях и не портила корректные прогнозы BMR.
 
 Воспроизводимость: seed=42 (torch + numpy). Split строго по времени из Этапа 3.1.
 Val используется для scheduler/early stopping; test не загружается.
@@ -35,11 +42,13 @@ HISTORY_PATH = os.path.join(PROCESSED_DIR, "training_history.json")
 
 SEED = 42
 BATCH_SIZE = 256
-LR = 1e-3
+LR = 3e-4
 MAX_EPOCHS = int(os.environ.get("PIRC_MAX_EPOCHS", "100"))
-PATIENCE = 15
+PATIENCE = 20
 GRAD_CLIP = 1.0
-WEIGHT_DECAY = 1e-5
+WEIGHT_DECAY = 1e-4
+DROPOUT = 0.3
+STORM_WEIGHT = 3.0
 SCHED_PATIENCE = 5
 SCHED_FACTOR = 0.5
 
@@ -131,7 +140,14 @@ def evaluate(model, loader, criterion, device) -> float:
     return total / max(n, 1)
 
 
-def main(smoke_test: bool = False) -> int:
+def main(
+    smoke_test: bool = False,
+    lr: float = LR,
+    dropout: float = DROPOUT,
+    patience: int = PATIENCE,
+    weight_decay: float = WEIGHT_DECAY,
+    storm_weight: float = STORM_WEIGHT,
+) -> int:
     set_seed(SEED)
     torch.set_num_threads(os.cpu_count() or 1)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -157,16 +173,18 @@ def main(smoke_test: bool = False) -> int:
     val_loader = build_loader("val", shuffle=False, batch_size=batch_size, limit=val_limit)
     print(f"[train] Размеры: train={len(train_loader.dataset)}, val={len(val_loader.dataset)}")
 
-    model = PiRCNet().to(device)
+    model = PiRCNet(dropout=dropout).to(device)
     n_params = sum(p.numel() for p in model.parameters())
     print(f"[train] Device: {device}; параметров: {n_params}")
+    print(f"[train] Гиперпараметры: lr={lr}, dropout={dropout}, patience={patience}, "
+          f"weight_decay={weight_decay}, storm_weight={storm_weight}")
 
-    criterion = WeightedMSELoss().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+    criterion = WeightedMSELoss(storm_weight=storm_weight).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", patience=SCHED_PATIENCE, factor=SCHED_FACTOR
     )
-    stopper = EarlyStopping(patience=PATIENCE)
+    stopper = EarlyStopping(patience=patience)
 
     history = []
     started = time.time()
@@ -205,6 +223,13 @@ def main(smoke_test: bool = False) -> int:
         "best_epoch": stopper.best_epoch,
         "best_val_loss": stopper.best,
         "stopped_early": stopper.should_stop,
+        "hyperparams": {
+            "lr": lr,
+            "dropout": dropout,
+            "patience": patience,
+            "weight_decay": weight_decay,
+            "storm_weight": storm_weight,
+        },
         "seed": SEED,
         "history": history,
     }
@@ -219,5 +244,22 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Обучение PiRCNet")
     parser.add_argument("--smoke_test", action="store_true",
                         help="Быстрый прогон: subsample + 2 эпохи, без сохранения модели")
+    parser.add_argument("--lr", type=float, default=LR,
+                        help="Скорость обучения Adam (default: 3e-4)")
+    parser.add_argument("--dropout", type=float, default=DROPOUT,
+                        help="Dropout в LSTM и FC (default: 0.3)")
+    parser.add_argument("--patience", type=int, default=PATIENCE,
+                        help="Patience early stopping (default: 20)")
+    parser.add_argument("--weight_decay", type=float, default=WEIGHT_DECAY,
+                        help="L2-регуляризация Adam (default: 1e-4)")
+    parser.add_argument("--storm_weight", type=float, default=STORM_WEIGHT,
+                        help="Вес часов бури в WeightedMSELoss (default: 3.0)")
     args = parser.parse_args()
-    sys.exit(main(smoke_test=args.smoke_test))
+    sys.exit(main(
+        smoke_test=args.smoke_test,
+        lr=args.lr,
+        dropout=args.dropout,
+        patience=args.patience,
+        weight_decay=args.weight_decay,
+        storm_weight=args.storm_weight,
+    ))

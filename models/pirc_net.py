@@ -50,12 +50,12 @@ class WeightedMSELoss(nn.Module):
     Параметры
     ---------
     storm_weight : float
-        Вес для часов бури, по умолчанию 5.0.
+        Вес для часов бури, по умолчанию 3.0.
     threshold : float
         Порог Dst_observed (нТл), ниже которого час считается бурей, -50.
     """
 
-    def __init__(self, storm_weight: float = 5.0, threshold: float = -50.0) -> None:
+    def __init__(self, storm_weight: float = 3.0, threshold: float = -50.0) -> None:
         super().__init__()
         self.storm_weight = storm_weight
         self.threshold = threshold
