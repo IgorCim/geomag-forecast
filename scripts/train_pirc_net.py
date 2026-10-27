@@ -41,14 +41,14 @@ BEST_PATH = os.path.join(MODELS_DIR, "pirc_net_best.pt")
 HISTORY_PATH = os.path.join(PROCESSED_DIR, "training_history.json")
 
 SEED = 42
-BATCH_SIZE = 256
+BATCH_SIZE = 128
 LR = 3e-4
 MAX_EPOCHS = int(os.environ.get("PIRC_MAX_EPOCHS", "100"))
-PATIENCE = 20
+PATIENCE = 25
 GRAD_CLIP = 1.0
 WEIGHT_DECAY = 1e-4
 DROPOUT = 0.3
-STORM_WEIGHT = 3.0
+STORM_WEIGHT = 10.0
 SCHED_PATIENCE = 5
 SCHED_FACTOR = 0.5
 
@@ -249,12 +249,15 @@ if __name__ == "__main__":
     parser.add_argument("--dropout", type=float, default=DROPOUT,
                         help="Dropout в LSTM и FC (default: 0.3)")
     parser.add_argument("--patience", type=int, default=PATIENCE,
-                        help="Patience early stopping (default: 20)")
+                        help="Patience early stopping (default: 25)")
     parser.add_argument("--weight_decay", type=float, default=WEIGHT_DECAY,
                         help="L2-регуляризация Adam (default: 1e-4)")
     parser.add_argument("--storm_weight", type=float, default=STORM_WEIGHT,
-                        help="Вес часов бури в WeightedMSELoss (default: 3.0)")
+                        help="Вес часов бури в WeightedMSELoss (default: 10.0)")
+    parser.add_argument("--batch_size", type=int, default=BATCH_SIZE,
+                        help="Размер батча (default: 128)")
     args = parser.parse_args()
+    # batch_size пока используется как константа BATCH_SIZE; оставляем для совместимости
     sys.exit(main(
         smoke_test=args.smoke_test,
         lr=args.lr,
